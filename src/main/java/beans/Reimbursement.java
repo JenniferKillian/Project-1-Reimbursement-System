@@ -6,14 +6,6 @@ import java.time.LocalDateTime;
 
 public class Reimbursement {
 	
-	public static enum ReimbursementType {
-		TRAVEL, FOOD, LODGING, OTHER
-	}
-	
-	public static enum Status {
-		PENDING, APPROVED, DENIED
-	}
-	
 	private int reimbId;
 	private Double amount;
 	private LocalDateTime submitted;
@@ -21,8 +13,8 @@ public class Reimbursement {
 	private String description;
 	private User author;
 	private User resolver;
-	private Status status;
-	private ReimbursementType type;
+	private int status;
+	private ReimType type;
 	
 	public int getReimbId() {
 		return reimbId;
@@ -32,11 +24,11 @@ public class Reimbursement {
 		this.reimbId = reimbId;
 	}
 
-	public Status getStatus() {
+	public int getStatus() {
 		return this.status;
 	}
 
-	public void setStatus(Status status) {
+	public void setStatus(int status) {
 		this.status = status;
 	}
 
@@ -74,11 +66,11 @@ public class Reimbursement {
 		}
 		this.amount = amount;
 	}
-	public ReimbursementType getType() {
+	public ReimType getType() {
 		return type;
 	}
 	
-	public void setType(ReimbursementType type) {
+	public void setType(ReimType type) {
 		this.type = type;
 	}
 	

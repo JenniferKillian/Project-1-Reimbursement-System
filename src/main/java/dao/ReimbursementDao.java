@@ -10,12 +10,15 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
 import beans.Reimbursement;
 import beans.User;
+import beans.UserType;
+import beans.ReimType;
 
 
 
@@ -23,7 +26,7 @@ import beans.User;
  * ReimbursementDao reads/writes to a database
  */
 public class ReimbursementDao {
-	/*
+	
 	private String url;
 	private String username;
 	private String password;
@@ -42,21 +45,29 @@ public class ReimbursementDao {
 		}
 	}
 
-	public Reimbursement addAccount(Reimbursement a) {
+	public Reimbursement addReimbursement(Reimbursement a) {
+		
 		try {
 			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
-			String sql = "INSERT INTO accounttable(ownerid, balance, approved, accounttype, accountid) values(?,?,?,?,?)"; //RETURNING id INTO uId";
+			String sql = "INSERT INTO ers_reimbursement(reimb_amount, reimb_description, reimb_author, reimb_status_id, reimb_type_id) values(?,?,?,?,?) RETURNING reimb_id;";
 			PreparedStatement ps = conn.prepareStatement(sql);
-			ps.setInt(5, a.getId());
-			ps.setInt(1, a.getOwnerId());
-			ps.setDouble(2, a.getBalance());
-			ps.setBoolean(3, a.isApproved());
-			if (a.getType() == null) {
-				ps.setString(4, "");
-			} else {
-				ps.setString(4, a.getType().toString());
-			}
+			
+			ps.setDouble(1, a.getAmount());
+			ps.setString(2, a.getDescription());
+			ps.setInt(3, a.getAuthor().getId());
+			ps.setInt(4, 2); // 2 correlates to status "pending"
+			ps.setInt(5, a.getType().getId());
+			
 			ps.execute();
+			ResultSet rs = ps.getResultSet();
+			rs.next();
+			int rId = rs.getInt(1);
+			
+			//while(rs.next()) {
+				//int rId = rs.getInt(1);
+			//}
+			
+			a.setReimbId(rId);
 			
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -65,146 +76,284 @@ public class ReimbursementDao {
 		return a;
 	}
 
-	public Reimbursement getAccount(Integer actId) {
-		Reimbursement u = new Reimbursement();
-		String type = "";
-		try {
-			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
-			String sql = "SELECT * from accounttable WHERE accountid = " + actId;
-			Statement s = conn.createStatement();
-			ResultSet rs = s.executeQuery(sql);
-			while(rs.next()){
-				//rs.get*()can take the column number or the name of the column in double quotes
-				u.setId(rs.getInt(1));
-				u.setOwnerId(rs.getInt(2));
-				u.setBalance(rs.getDouble(3));
-				u.setApproved(rs.getBoolean(5));
-				type = rs.getString(4);
-				if (type.equals("CHECKING")) {
-					u.setType(AccountType.CHECKING);
-				} else if (type.equals("SAVINGS")) {
-					u.setType(AccountType.SAVINGS);
-				}
-			}
-			
-		} catch (SQLException e) {
-			
-			e.printStackTrace();
-		}
+	public Reimbursement getReimbursement(Integer actId) {
+		Reimbursement r = new Reimbursement();
 		
-		return u;
-	}
-
-	public List<Reimbursement> getAccounts() {
-		List<Reimbursement> allAccounts = new ArrayList<Reimbursement>();
 		try {
 			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
-			String sql = "SELECT * from accounttable";
+			String sql = "SELECT * from ers_reimbursement WHERE reimb_id = " + actId;
 			Statement s = conn.createStatement();
 			ResultSet rs = s.executeQuery(sql);
 			while(rs.next()){
 				//rs.get*()can take the column number or the name of the column in double quotes
-				Account u = new Account();
-				u.setId(rs.getInt(1));
-				u.setOwnerId(rs.getInt(2));
-				u.setBalance(rs.getDouble(3));
-				u.setApproved(rs.getBoolean(5));
-				String type = rs.getString(4);
-				if (type.equals("CHECKING")) {
-					u.setType(AccountType.CHECKING);
-				} else if (type.equals("SAVINGS")) {
-					u.setType(AccountType.SAVINGS);
+				r.setReimbId(rs.getInt(1));
+				r.setAmount(rs.getDouble(2));
+				r.setSubmitted(rs.getTimestamp(3).toLocalDateTime());
+				if (rs.getTimestamp(4) != null) {
+					r.setResolved(rs.getTimestamp(4).toLocalDateTime());
 				}
-				allAccounts.add(u);
-			}
-			
-		} catch (SQLException e) {
-			
-			e.printStackTrace();
-		}
-		return allAccounts;
-	}
-
-	public List<Reimbursement> getAccountsByUser(User u) {
-		int userId = u.getId();
-		List<Reimbursement> accounts = new ArrayList<Reimbursement>();
-		try {
-			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
-			String sql = "SELECT * from accounttable WHERE ownerid = " + userId + ";";
-			Statement s = conn.createStatement();
-			ResultSet rs = s.executeQuery(sql);
-			while(rs.next()){
-				//rs.get*()can take the column number or the name of the column in double quotes
-				Reimbursement a = new Reimbursement();
-				a.setId(rs.getInt(1));
-				a.setOwnerId(rs.getInt(2));
-				a.setBalance(rs.getDouble(3));
-				a.setApproved(rs.getBoolean(5));
-				String type = rs.getString(4);
-				if (type.equals("CHECKING")) {
-					a.setType(AccountType.CHECKING);
-				} else if (type.equals("SAVINGS")) {
-					a.setType(AccountType.SAVINGS);
+				r.setDescription(rs.getString(5));
+				User u = new User();
+				u.setId(rs.getInt(6));
+				r.setAuthor(u);
+				if (rs.getInt(7) > 0) {
+					User u2 = new User();
+					u2.setId(rs.getInt(7));
+					r.setResolver(u2);
 				}
-				accounts.add(a);
-			}
-			
-		} catch (SQLException e) {
-			
-			e.printStackTrace();
-		}
-		return accounts;
-	}
-
-	public Reimbursement updateAccount(Reimbursement a) {
-		
-		if (a.getTransactions() != null) {
-			for (Transaction t : a.getTransactions()) {
+				r.setStatus(rs.getInt(8));
+				ReimType rt = new ReimType();
+				rt.setId(rs.getInt(9));
+				r.setType(rt);
 				
-				try {
-					Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
-					
-					String sqlT = "INSERT INTO transactiontable(transactiontime, accountid, recipient, amount, transactiontype) values(?,?,?,?,?)";
-					PreparedStatement ps = conn.prepareStatement(sqlT);
-					ps.setObject(1, Timestamp.valueOf(t.getTimestamp()));
-					ps.setInt(2, t.getSender().getOwnerId());
-					
-					ps.setInt(3, t.getRecipient().getId());
-					ps.setDouble(4, t.getAmount());
-					if (t.getType() == null) {
-						ps.setString(5, "");
-					} else {
-						ps.setString(5, t.getType().toString());
+				
+			}
+			
+			sql = "SELECT * from ers_users WHERE user_id = " + r.getAuthor().getId() + ";";
+			s = conn.createStatement();
+			rs = s.executeQuery(sql);
+			while(rs.next()) {
+				User u = new User();
+				u.setId(rs.getInt(1));
+				u.setUsername(rs.getString(2));
+				u.setPassword(rs.getString(3));
+				u.setFirstName(rs.getString(4));
+				u.setLastName(rs.getString(5));
+				if(rs.getString(6) != null) {
+					u.setEmail(rs.getString(6));
+				}
+				UserType uType = new UserType();
+				uType.setId(rs.getInt(7));
+				u.setUserType(uType);
+				
+				r.setAuthor(u);
+			}
+			
+			if (r.getResolver() != null) {
+				sql = "SELECT * from ers_users WHERE user_id = " + r.getResolver().getId() + ";";
+				s = conn.createStatement();
+				rs = s.executeQuery(sql);
+				while(rs.next()) {
+					User u = new User();
+					u.setId(rs.getInt(1));
+					u.setUsername(rs.getString(2));
+					u.setPassword(rs.getString(3));
+					u.setFirstName(rs.getString(4));
+					u.setLastName(rs.getString(5));
+					if(rs.getString(6) != null) {
+						u.setEmail(rs.getString(6));
 					}
-					ps.execute();
-					ps.close();
+					UserType uType = new UserType();
+					uType.setId(rs.getInt(7));
+					u.setUserType(uType);
 					
-				} catch (SQLException e) {
-					System.out.println("error in transaction insert");
-					e.printStackTrace();
+					r.setResolver(u);
 				}
 			}
-		}
-		
-		String type = "";
-		if (a.getType() == AccountType.CHECKING) {
-			type = "CHECKING";
-		} else if (a.getType() == AccountType.SAVINGS) {
-			type = "SAVINGS";
-		}
-		try {
-			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
-			String sql = "UPDATE accounttable set" +
-			" ownerid = '" + a.getOwnerId() +
-			"', balance = '" + a.getBalance() +
-			"', approved = '" + a.isApproved() +
-			"', accounttype = '" + type +
-			"' WHERE accountid = " + a.getId() + ";";
-			Statement s = conn.createStatement();
-			s.executeQuery(sql);
 			
 		} catch (SQLException e) {
-			System.out.println("error in update account");
+			
+			e.printStackTrace();
+		}
+		
+		return r;
+	}
+
+	public List<Reimbursement> getReimbursements() {
+		List<Reimbursement> allReimbursements = new ArrayList<Reimbursement>();
+		try {
+			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
+			String sql = "SELECT * from ers_reimbursement";
+			Statement s = conn.createStatement();
+			ResultSet rs = s.executeQuery(sql);
+			while(rs.next()){
+				Reimbursement r = new Reimbursement();
+				r.setReimbId(rs.getInt(1));
+				r.setAmount(rs.getDouble(2));
+				r.setSubmitted(rs.getTimestamp(3).toLocalDateTime());
+				if (rs.getTimestamp(4) != null) {
+					r.setResolved(rs.getTimestamp(4).toLocalDateTime());
+				}
+				r.setDescription(rs.getString(5));
+				User u = new User();
+				u.setId(rs.getInt(6));
+				r.setAuthor(u);
+				if (rs.getInt(7) > 0) {
+					User u2 = new User();
+					u2.setId(rs.getInt(7));
+					r.setResolver(u2);
+				}
+				r.setStatus(rs.getInt(8));
+				ReimType rt = new ReimType();
+				rt.setId(rs.getInt(9));
+				r.setType(rt);
+				
+				allReimbursements.add(r);
+			}
+			
+			for(Reimbursement r : allReimbursements) {
+				sql = "SELECT * from ers_users WHERE user_id = " + r.getAuthor().getId() + ";";
+				s = conn.createStatement();
+				rs = s.executeQuery(sql);
+				while(rs.next()) {
+					User u = new User();
+					u.setId(rs.getInt(1));
+					u.setUsername(rs.getString(2));
+					u.setPassword(rs.getString(3));
+					u.setFirstName(rs.getString(4));
+					u.setLastName(rs.getString(5));
+					if(rs.getString(6) != null) {
+						u.setEmail(rs.getString(6));
+					}
+					UserType uType = new UserType();
+					uType.setId(rs.getInt(7));
+					u.setUserType(uType);
+					
+					r.setAuthor(u);
+				}
+				
+				if (r.getResolver() != null) {
+					sql = "SELECT * from ers_users WHERE user_id = " + r.getResolver().getId() + ";";
+					s = conn.createStatement();
+					rs = s.executeQuery(sql);
+					while(rs.next()) {
+						User u = new User();
+						u.setId(rs.getInt(1));
+						u.setUsername(rs.getString(2));
+						u.setPassword(rs.getString(3));
+						u.setFirstName(rs.getString(4));
+						u.setLastName(rs.getString(5));
+						if(rs.getString(6) != null) {
+							u.setEmail(rs.getString(6));
+						}
+						UserType uType = new UserType();
+						uType.setId(rs.getInt(7));
+						u.setUserType(uType);
+						
+						r.setResolver(u);
+					}
+				}
+			}
+			
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
+		return allReimbursements;
+	}
+	
+	public List<Reimbursement> getReimbursementsByUser(User author) {
+		int userId = author.getId();
+		List<Reimbursement> reimbursements = new ArrayList<Reimbursement>();
+		try {
+			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
+			String sql = "SELECT * from ers_reimbursement WHERE reimb_author = " + userId + ";";
+			Statement s = conn.createStatement();
+			ResultSet rs = s.executeQuery(sql);
+			while(rs.next()){
+				Reimbursement r = new Reimbursement();
+				r.setReimbId(rs.getInt(1));
+				r.setAmount(rs.getDouble(2));
+				r.setSubmitted(rs.getTimestamp(3).toLocalDateTime());
+				if (rs.getTimestamp(4) != null) {
+					r.setResolved(rs.getTimestamp(4).toLocalDateTime());
+				}
+				r.setDescription(rs.getString(5));
+				User u = new User();
+				u.setId(rs.getInt(6));
+				r.setAuthor(u);
+				if (rs.getInt(7) > 0) {
+					User u2 = new User();
+					u2.setId(rs.getInt(7));
+					r.setResolver(u2);
+				}
+				r.setStatus(rs.getInt(8));
+				ReimType rt = new ReimType();
+				rt.setId(rs.getInt(9));
+				r.setType(rt);
+				
+				reimbursements.add(r);
+			}
+			
+			for(Reimbursement r : reimbursements) {
+				sql = "SELECT * from ers_users WHERE user_id = " + r.getAuthor().getId() + ";";
+				s = conn.createStatement();
+				rs = s.executeQuery(sql);
+				while(rs.next()) {
+					User u = new User();
+					u.setId(rs.getInt(1));
+					u.setUsername(rs.getString(2));
+					u.setPassword(rs.getString(3));
+					u.setFirstName(rs.getString(4));
+					u.setLastName(rs.getString(5));
+					if(rs.getString(6) != null) {
+						u.setEmail(rs.getString(6));
+					}
+					UserType uType = new UserType();
+					uType.setId(rs.getInt(7));
+					u.setUserType(uType);
+					
+					r.setAuthor(u);
+				}
+				
+				if (r.getResolver() != null) {
+					sql = "SELECT * from ers_users WHERE user_id = " + r.getResolver().getId() + ";";
+					s = conn.createStatement();
+					rs = s.executeQuery(sql);
+					while(rs.next()) {
+						User u = new User();
+						u.setId(rs.getInt(1));
+						u.setUsername(rs.getString(2));
+						u.setPassword(rs.getString(3));
+						u.setFirstName(rs.getString(4));
+						u.setLastName(rs.getString(5));
+						if(rs.getString(6) != null) {
+							u.setEmail(rs.getString(6));
+						}
+						UserType uType = new UserType();
+						uType.setId(rs.getInt(7));
+						u.setUserType(uType);
+						
+						r.setResolver(u);
+					}
+				}
+			}
+			
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
+		return reimbursements;
+	}
+	
+	public Reimbursement updateReimbursement(Reimbursement a) {
+		
+		
+		try {
+			/*
+			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
+			
+			String sql = "UPDATE ers_reimbursement set(reimb_resolver, reimb_status_id) values (?,?) WHERE reimb_id = " + a.getReimbId() + ";";
+			PreparedStatement ps = conn.prepareStatement(sql);
+			
+			ps.setInt(1, a.getResolver().getId());
+			
+			ps.setInt(2, a.getStatus());
+			
+			ps.execute();
+			ps.close();
+			/*/
+			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
+			String sql = "UPDATE ers_reimbursement set" +
+			
+			" reimb_resolver = " + a.getResolver().getId() +
+			", reimb_status_id = " + a.getStatus() +
+			" WHERE reimb_id = " + a.getReimbId() + ";";
+			Statement s = conn.createStatement();
+			s.execute(sql);
+			
+		} catch (SQLException e) {
+			System.out.println("error in update reimbursement");
 			e.printStackTrace();
 		}
 		
@@ -212,18 +361,18 @@ public class ReimbursementDao {
 		
 		return a;
 	}
-
-	public boolean removeAccount(Reimbursement a) {
+	
+	public boolean removeReimbursement(Reimbursement a) {
 		try {
 			Connection conn = DriverManager.getConnection(this.url,this.username,this.password);
-			String sql = "DELETE FROM accounttable WHERE accountid = " + a.getId() + ";";
+			String sql = "DELETE FROM ers_reimbursement WHERE reimb_id = " + a.getReimbId() + ";";
 			Statement s = conn.createStatement();
-			s.executeQuery(sql);
+			s.execute(sql);
 			return true;
 		}catch(SQLException e) {
 			e.printStackTrace();
 			return false;
 		}
 	}
-*/
+
 }

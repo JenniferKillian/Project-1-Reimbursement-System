@@ -9,4 +9,113 @@
     <welcome-file>default.htm</welcome-file>
     <welcome-file>default.jsp</welcome-file>
   </welcome-file-list>
-</web-app>
+  
+  
+  <!-- Login Servlet> -->
+  <servlet>
+  <servlet-name>MasterServlet</servlet-name>
+  	<servlet-class>servlet.MasterServlet</servlet-class>
+  	<load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+  		<servlet-name>MasterServlet</servlet-name>
+  	<url-pattern>*.change</url-pattern>
+  </servlet-mapping>
+  
+    <!-- JSON Servlet> -->
+  <servlet>
+  <servlet-name>JSONMasterServlet</servlet-name>
+  	<servlet-class>servlet.JSONMasterServlet</servlet-class>
+  	<load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+  		<servlet-name>JSONMasterServlet</servlet-name>
+  	<url-pattern>*.json</url-pattern>
+  </servlet-mapping>
+  
+  </web-app>
+  
+  <!-- Manager Servlet> 
+  <servlet>
+  <servlet-name>ManagerServlet</servlet-name>
+  	<servlet-class>servlet.ManagerServlet</servlet-class>
+  	<load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+  		<servlet-name>ManagerServlet</servlet-name>
+  	<url-pattern>*.manager</url-pattern>
+  </servlet-mapping>
+  -->
+  
+  <!-- Employee Servlet> 
+  <servlet>
+  <servlet-name>EmployeeServlet</servlet-name>
+  	<servlet-class>servlet.EmployeeServlet</servlet-class>
+  	<load-on-startup>1</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+  		<servlet-name>EmployeeServlet</servlet-name>
+  	<url-pattern>*.employee</url-pattern>
+  </servlet-mapping>
+  -->
+  <!-- 
+  Caroline's Servlet
+  
+  <servlet>
+  	<servlet-name>JSONMasterServlet</servlet-name>
+  	<servlet-class>com.example.json.JSONMasterServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+  	<servlet-name>JSONMasterServlet</servlet-name>
+  	<url-pattern>*.json</url-pattern>
+  </servlet-mapping>
+  
+   -->
+  
+  
+  
+
+  
+  <!-- url pattern creates an endpoint that will trigger this servlet, specifically we are determining 
+  		the URI -->
+  		<!-- URL: Unified resource locator: this contains your domain and URI 
+  				URI: unified resource identifer: this tells where at your doamin the resource
+  					you are requesting exists-->
+  <!-- 
+  
+    <servlet>
+  	<servlet-name>JSONMasterServlet</servlet-name>
+  	<servlet-class>com.example.json.JSONMasterServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+  	<servlet-name>JSONMasterServlet</servlet-name>
+  	<url-pattern>*.json</url-pattern>
+  </servlet-mapping>
+    
+  <servlet>
+  
+  	<servlet-name>IndirectServletObj</servlet-name>
+  	<servlet-class>com.example.indirectservlet.IndirectServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+  	<servlet-name>IndirectServletObj</servlet-name>
+  	<url-pattern></url-pattern>
+  </servlet-mapping>
+  <servlet>
+  	<servlet-name>SessionServletObj</servlet-name>
+  	<servlet-class>com.example.session.SessionServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+  	<servlet-name>SessionServletObj</servlet-name>
+  	<url-pattern>/sesserv</url-pattern>
+  </servlet-mapping>
+  <servlet>
+  	<servlet-name>HelperSessionServletObj</servlet-name>
+  	<servlet-class>com.example.session.HelperSessionServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+  	<servlet-name>HelperSessionServletObj</servlet-name>
+  	<url-pattern>/helpsesserv</url-pattern>
+  </servlet-mapping>
+  
+   -->

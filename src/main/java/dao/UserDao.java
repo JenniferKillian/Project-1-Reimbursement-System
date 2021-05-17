@@ -13,7 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import beans.Reimbursement;
 import beans.User;
+import beans.UserType;
 
 
 
@@ -45,7 +47,7 @@ public class UserDao {
 	
 	public User addUser(User user) {
 		try {
-			int uId = 0;
+			
 			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
 			String sql = "INSERT INTO ers_users (user_username, user_password, user_first_name, user_last_name, user_email, user_role_id) values(?,?,?,?,?,?)"; // RETURNING id INTO uId";
 			PreparedStatement ps = conn.prepareStatement(sql);
@@ -62,7 +64,16 @@ public class UserDao {
 			
 			
 			ps.execute();
-			user.setId(uId);
+			ps.close();
+			
+			Connection conn2 = DriverManager.getConnection(this.url, this.username, this.password);
+			String sql2 = "SELECT * from ers_users WHERE user_username = '" + user.getUsername() + "';";
+			Statement s = conn2.createStatement();
+			ResultSet rs = s.executeQuery(sql2);
+			while(rs.next()) {
+				user.setId(rs.getInt(1));
+			}
+			
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
@@ -70,90 +81,103 @@ public class UserDao {
 		
 		return user;
 	}
-/*
+
 	public User getUser(Integer userId) {
 		User u = new User();
-		String uType = "";
 		try {
 			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
-			String sql = "SELECT * from usertable WHERE id = " + userId;
+			String sql = "SELECT * from ers_users WHERE user_id = " + userId;
 			Statement s = conn.createStatement();
 			ResultSet rs = s.executeQuery(sql);
 			while(rs.next()){
-				//rs.get*()can take the column number or the name of the column in double quotes
 				u.setId(rs.getInt(1));
 				u.setUsername(rs.getString(2));
 				u.setPassword(rs.getString(3));
 				u.setFirstName(rs.getString(4));
 				u.setLastName(rs.getString(5));
-				uType = rs.getString(6);
+				if(rs.getString(6) != null) {
+					u.setEmail(rs.getString(6));
+				}
+				UserType uType = new UserType();
+				uType.setId(rs.getInt(7));
+				u.setUserType(uType);
 			}
-			
+			conn.close();
 		} catch (SQLException e) {
 			
 			e.printStackTrace();
 		}
-		if (uType.equals("CUSTOMER")) {
-			u.setUserType(UserType.CUSTOMER);
-		} else if (uType.equals("EMPLOYEE")) {
-			u.setUserType(UserType.EMPLOYEE);
-		}
+		
+		ReimbursementDao rd = new ReimbursementDao();
+		List<Reimbursement> rl = new ArrayList<Reimbursement>();
+		rl = rd.getReimbursementsByUser(u);
+		u.setreimbs(rl);
 		return u;
 	}
 
 	public User getUser(String uname, String pass) {
+		System.out.println("in userdao getUser");
 		User u = new User();
-		String uType = "";
 		try {
+			try {
+				Class.forName("org.postgresql.Driver");
+			} catch (ClassNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
-			String sql = "SELECT * from usertable WHERE username = " + uname + " AND pword = " + pass;
+			String sql = "SELECT * from ers_users WHERE user_username = '" + uname + "' AND user_password = '" + pass +"';";
 			Statement s = conn.createStatement();
 			ResultSet rs = s.executeQuery(sql);
 			while(rs.next()){
-				//rs.get*()can take the column number or the name of the column in double quotes
 				u.setId(rs.getInt(1));
 				u.setUsername(rs.getString(2));
 				u.setPassword(rs.getString(3));
 				u.setFirstName(rs.getString(4));
 				u.setLastName(rs.getString(5));
-				uType = rs.getString(6);
+				if(rs.getString(6) != null) {
+					u.setEmail(rs.getString(6));
+				}
+				UserType uType = new UserType();
+				uType.setId(rs.getInt(7));
+				u.setUserType(uType);
 			}
-			
+			conn.close();
 		} catch (SQLException e) {
 			
 			e.printStackTrace();
 		}
-		if (uType.equals("CUSTOMER")) {
-			u.setUserType(UserType.CUSTOMER);
-		} else if (uType.equals("EMPLOYEE")) {
-			u.setUserType(UserType.EMPLOYEE);
-		}
+		// get reimbursements
+		System.out.println("user id = " + u.getId());
 		return u;
 	}
 
 	public List<User> getAllUsers() {
 		List<User> allUsers = new ArrayList<User>();
+		
 		try {
 			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
-			String sql = "SELECT * from usertable";
+			String sql = "SELECT * from ers_users";
 			Statement s = conn.createStatement();
 			ResultSet rs = s.executeQuery(sql);
 			while(rs.next()){
-				//rs.get*()can take the column number or the name of the column in double quotes
 				User u = new User();
 				u.setId(rs.getInt(1));
 				u.setUsername(rs.getString(2));
 				u.setPassword(rs.getString(3));
 				u.setFirstName(rs.getString(4));
 				u.setLastName(rs.getString(5));
-				String uType = rs.getString(6);
-				if (uType.equals("CUSTOMER")) {
-					u.setUserType(UserType.CUSTOMER);
-				} else if (uType.equals("EMPLOYEE")) {
-					u.setUserType(UserType.EMPLOYEE);
+				if(rs.getString(6) != null) {
+					u.setEmail(rs.getString(6));
 				}
+				UserType uType = new UserType();
+				uType.setId(rs.getInt(7));
+				u.setUserType(uType);
+				
 				allUsers.add(u);
 			}
+			conn.close();
+			//get reimbursements
 			
 		} catch (SQLException e) {
 			
@@ -163,23 +187,18 @@ public class UserDao {
 	}
 
 	public User updateUser(User user) {
-		String uType = "";
-		if (user.getUserType() == UserType.CUSTOMER) {
-			uType = "CUSTOMER";
-		} else if (user.getUserType() == UserType.EMPLOYEE) {
-			uType = "EMPLOYEE";
-		}
 		try {
 			Connection conn = DriverManager.getConnection(this.url, this.username, this.password);
-			String sql = "UPDATE usertable set" +
-			" username = '" + user.getUsername() +
-			"', pword = '" + user.getPassword() +
-			"', firstname = '" + user.getFirstName() +
-			"', lastname = '" + user.getLastName() +
-			"', usertype = '" + uType +
-			"' WHERE id = " + user.getId() + ";";
+			String sql = "UPDATE ers_users set" +
+			" user_username = '" + user.getUsername() +
+			"', user_password = '" + user.getPassword() +
+			"', user_first_name = '" + user.getFirstName() +
+			"', user_last_name = '" + user.getLastName() +
+			"', user_email = '" + user.getEmail() +
+			"', user_role_id = " + user.getUserType().getId() +
+			" WHERE user_id = " + user.getId() + ";";
 			Statement s = conn.createStatement();
-			s.executeQuery(sql);
+			s.execute(sql);
 			
 			
 		} catch (SQLException e) {
@@ -191,9 +210,9 @@ public class UserDao {
 	public boolean removeUser(User u) {
 		try {
 			Connection conn = DriverManager.getConnection(this.url,this.username,this.password);
-			String sql = "DELETE FROM usertable WHERE id = " + u.getId() + ";";
+			String sql = "DELETE FROM ers_users WHERE user_id = " + u.getId() + ";";
 			Statement s = conn.createStatement();
-			s.executeQuery(sql);
+			s.execute(sql);
 			return true;
 		}catch(SQLException e) {
 			e.printStackTrace();
@@ -201,5 +220,5 @@ public class UserDao {
 		}
 		
 	}
-*/
+
 }

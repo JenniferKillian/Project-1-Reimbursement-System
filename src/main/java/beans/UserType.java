@@ -9,10 +9,12 @@ public class UserType {
 		return role;
 	}
 	public void setRole(String role) {
-		if (role == "Employee") {
+		if (role.toLowerCase() == "employee") {
+			this.role = "employee";
 			this.id = 1;
 		}
-		if (role == "Finance Manager") {
+		if (role.toLowerCase() == "finance manager" || role.toLowerCase() == "finmanager") {
+			this.role = "finance manager";
 			this.id = 2;
 		}
 	}
@@ -22,10 +24,10 @@ public class UserType {
 	public void setId(int id) {
 		this.id = id;
 		if (id == 1) {
-			this.role = "Employee";
+			this.role = "employee";
 		}
 		if (id == 2) {
-			this.role = "Finance Manager";
+			this.role = "finance manager";
 		}
 	}
 
